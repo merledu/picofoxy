@@ -1,0 +1,4 @@
+[submodule "Buraq-mini"]
+	path = Buraq-mini
+	url = https://github.com/merledu/Buraq-mini.git
+	branch = decoupled-interface
