@@ -2,3 +2,6 @@
 	path = Buraq-mini
 	url = https://github.com/merledu/Buraq-mini.git
 	branch = decoupled-interface
+[submodule "caravan"]
+	path = caravan
+	url = https://github.com/merledu/caravan.git
