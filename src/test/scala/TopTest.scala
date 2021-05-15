@@ -6,11 +6,18 @@ import chiseltest.internal.VerilatorBackendAnnotation
 import chiseltest.experimental.TestOptionBuilder._
 import org.scalatest.FreeSpec
 
-class HelloTest extends FreeSpec with ChiselScalatestTester {
+class TopTest extends FreeSpec with ChiselScalatestTester {
+  def getFile: Option[String] = {
+    if (scalaTestContext.value.get.configMap.contains("memFile")) {
+      Some(scalaTestContext.value.get.configMap("memFile").toString)
+    } else {
+      None
+    }
+  }
   "should just work" in {
-    test(new Hello).withAnnotations(Seq(VerilatorBackendAnnotation)) {c =>
-      c.io.in.poke(true.B)
-      c.io.out.expect(true.B)
+    val programFile = getFile
+    test(new Top(programFile)).withAnnotations(Seq(VerilatorBackendAnnotation)) {c =>
+      c.clock.step(200)
     }
   }
 }
