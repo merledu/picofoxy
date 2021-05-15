@@ -12,3 +12,21 @@ Create a minimal SoC built from Chisel based generators and use a completely ope
 * Interconnect together to create an SoC
 * Use FuseSoC to generate the bitstream
 * Use openFPGALoader to program the bitstream
+
+## Getting Started
+
+Clone the repository to the location where you want the project to live in:
+
+```bash
+git clone https://github.com/merledu/picofoxy.git
+```
+Move into the repository and clone the dependent projects which are integrated as git submodules:
+
+```bash
+cd picofoxy
+git submodule update --init --recursive
+```
+Now build the source file and run a default test to check if everything is properly built:
+```bash
+sbt test
+```
