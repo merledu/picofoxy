@@ -17,7 +17,8 @@ class TopTest extends FreeSpec with ChiselScalatestTester {
   "should just work" in {
     val programFile = getFile
     test(new Top(programFile)).withAnnotations(Seq(VerilatorBackendAnnotation)) {c =>
-      c.clock.step(200)
+      c.clock.setTimeout(0)
+      c.clock.step(8000)
     }
   }
 }
