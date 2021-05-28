@@ -8,18 +8,11 @@ import chisel3.util.Cat
 import jigsaw.rams.fpga.BlockRam
 import jigsaw.peripherals.gpio._
 
-class IOBUF extends BlackBox {
-  val io = IO(new Bundle {
-    val O = Output(Bool())
-    val IO = Analog(1.W)
-    val I = Input(Bool())
-    val T = Input(Bool())
-  })
-}
-
 class Top(programFile: Option[String]) extends Module {
   val io = IO(new Bundle {
-    val gpio_io = Vec(4, Analog(1.W))
+    val gpio_o = Output(UInt(4.W))
+    val gpio_i = Input(UInt(4.W))
+    val gpio_en_o = Output(UInt(4.W))
     //val gpio_intr_o = Output(UInt(32.W))
   })
 
@@ -34,11 +27,6 @@ class Top(programFile: Option[String]) extends Module {
   val gpio = Module(new Gpio(new WBRequest(), new WBResponse()))
   val wbErr = Module(new WishboneErr())
   val core = Module(new Core())
-
-  val gpioPad_0 = Module(new IOBUF)
-  val gpioPad_1 = Module(new IOBUF)
-  val gpioPad_2 = Module(new IOBUF)
-  val gpioPad_3 = Module(new IOBUF)
 
   val addressMap = new AddressMap
   addressMap.addDevice(Peripherals.DCCM, "h40000000".U(32.W), "h00000FFF".U(32.W), wb_dmem_slave)
@@ -79,23 +67,10 @@ class Top(programFile: Option[String]) extends Module {
   wb_gpio_slave.io.reqOut <> gpio.io.req
   wb_gpio_slave.io.rspIn <> gpio.io.rsp
 
+  io.gpio_o := gpio.io.cio_gpio_o(3,0)
 
-  gpioPad_0.io.I := gpio.io.cio_gpio_o(0)
-  gpioPad_1.io.I := gpio.io.cio_gpio_o(1)
-  gpioPad_2.io.I := gpio.io.cio_gpio_o(2)
-  gpioPad_3.io.I := gpio.io.cio_gpio_o(3)
-
-  gpio.io.cio_gpio_i := Cat("h0000000".U, gpioPad_3.io.O, gpioPad_2.io.O, gpioPad_1.io.O, gpioPad_0.io.O)
-
-  gpioPad_0.io.IO <> io.gpio_io(0)
-  gpioPad_1.io.IO <> io.gpio_io(1)
-  gpioPad_2.io.IO <> io.gpio_io(2)
-  gpioPad_3.io.IO <> io.gpio_io(3)
-
-  gpioPad_0.io.T := ~gpio.io.cio_gpio_en_o(0)
-  gpioPad_1.io.T := ~gpio.io.cio_gpio_en_o(1)
-  gpioPad_2.io.T := ~gpio.io.cio_gpio_en_o(2)
-  gpioPad_3.io.T := ~gpio.io.cio_gpio_en_o(3)
+  io.gpio_en_o := gpio.io.cio_gpio_en_o(3,0)
+  gpio.io.cio_gpio_i := io.gpio_i
 
   core.io.stall_core_i := false.B
   core.io.irq_external_i := false.B
