@@ -2,15 +2,25 @@ import chisel3._
 import buraq_mini.core.Core
 import caravan.bus.common.{AddressMap, BusDecoder, Switch1toN}
 import caravan.bus.wishbone.{Peripherals, WBRequest, WBResponse, WishboneConfig, WishboneDevice, WishboneErr, WishboneHost, WishboneMaster, WishboneSlave}
+import chisel3.experimental.Analog
+import chisel3.stage.ChiselStage
+import chisel3.util.Cat
 import jigsaw.rams.fpga.BlockRam
 import jigsaw.peripherals.gpio._
 
+class IOBUF extends BlackBox {
+  val io = IO(new Bundle {
+    val O = Output(Bool())
+    val IO = Analog(1.W)
+    val I = Input(Bool())
+    val T = Input(Bool())
+  })
+}
+
 class Top(programFile: Option[String]) extends Module {
   val io = IO(new Bundle {
-    val gpio_i = Input(UInt(32.W))
-    val gpio_o = Output(UInt(32.W))
-    val gpio_en_o = Output(UInt(32.W))
-    val gpio_intr_o = Output(UInt(32.W))
+    val gpio_io = Vec(4, Analog(1.W))
+    //val gpio_intr_o = Output(UInt(32.W))
   })
 
   implicit val config: WishboneConfig = WishboneConfig(32, 32)
@@ -24,6 +34,11 @@ class Top(programFile: Option[String]) extends Module {
   val gpio = Module(new Gpio(new WBRequest(), new WBResponse()))
   val wbErr = Module(new WishboneErr())
   val core = Module(new Core())
+
+  val gpioPad_0 = Module(new IOBUF)
+  val gpioPad_1 = Module(new IOBUF)
+  val gpioPad_2 = Module(new IOBUF)
+  val gpioPad_3 = Module(new IOBUF)
 
   val addressMap = new AddressMap
   addressMap.addDevice(Peripherals.DCCM, "h40000000".U(32.W), "h00000FFF".U(32.W), wb_dmem_slave)
@@ -65,15 +80,29 @@ class Top(programFile: Option[String]) extends Module {
   wb_gpio_slave.io.rspIn <> gpio.io.rsp
 
 
-  gpio.io.cio_gpio_i := io.gpio_i
-  io.gpio_o := gpio.io.cio_gpio_o
-  io.gpio_en_o := gpio.io.cio_gpio_en_o
-  io.gpio_intr_o := gpio.io.intr_gpio_o
+  gpioPad_0.io.I := gpio.io.cio_gpio_o(0)
+  gpioPad_1.io.I := gpio.io.cio_gpio_o(1)
+  gpioPad_2.io.I := gpio.io.cio_gpio_o(2)
+  gpioPad_3.io.I := gpio.io.cio_gpio_o(3)
 
+  gpio.io.cio_gpio_i := Cat("h0000000".U, gpioPad_3.io.O, gpioPad_2.io.O, gpioPad_1.io.O, gpioPad_0.io.O)
 
+  gpioPad_0.io.IO <> io.gpio_io(0)
+  gpioPad_1.io.IO <> io.gpio_io(1)
+  gpioPad_2.io.IO <> io.gpio_io(2)
+  gpioPad_3.io.IO <> io.gpio_io(3)
+
+  gpioPad_0.io.T := ~gpio.io.cio_gpio_en_o(0)
+  gpioPad_1.io.T := ~gpio.io.cio_gpio_en_o(1)
+  gpioPad_2.io.T := ~gpio.io.cio_gpio_en_o(2)
+  gpioPad_3.io.T := ~gpio.io.cio_gpio_en_o(3)
 
   core.io.stall_core_i := false.B
   core.io.irq_external_i := false.B
 
 
+}
+
+object TopDriver extends App {
+  println((new ChiselStage).emitVerilog(new Top(Some("/home/merl/Desktop/program.mem"))))
 }
