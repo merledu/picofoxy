@@ -40,6 +40,9 @@ Upload the bitstream on Arty A7 board:
 make upload
 ```
 
+## Picofoxy in action
+<img src="https://github.com/merledu/picofoxy/blob/main/symbiflow-running.gif" width="300" height="500" />
+
 ## Getting the dependencies
 #### JDK 8 or newer
 
@@ -58,3 +61,16 @@ You can easily install OpenOCD on Ubuntu:
 ```bash
 sudo apt install openocd
 ```
+
+## Running new program
+Write now baremetal assembly is supported in Picofoxy. The gpio base address is `0x40001000`. There is a `DIRECT_OE` register at offset `0x1C`. It configures the pins as outputs. The `DATA_OUT` register at offset `0x10` is then used to write the data on the pins. Write now 4 pins gpio[3:0] are extracted from the top and connected with the Arty board. However, these can be extended upto 32 pins. Here is a dummy program to turn on the gpio[0] pin attached with LD4 of Arty board.
+
+```asm
+li x15, 0x40001000  # load gpio base address
+li x16, 1
+sw x16, 0x1c(x15)   # configure gpio[0] pin as output
+sw x16, 0x10(x15)   # turn gpio[0] pin HIGH
+exit:
+  jal exit          # keeping the pc in loop
+```
+The compiled hex should be added in the `program.mem` file inside the `fpga/` folder.
