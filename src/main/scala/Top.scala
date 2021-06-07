@@ -111,5 +111,5 @@ class Top(programFile: Option[String]) extends Module {
 }
 
 object PicofoxyDriver extends App {
-  println((new ChiselStage).emitVerilog(new Picofoxy(Some("/home/merl/Desktop/program.mem"))))
+  (new ChiselStage).emitVerilog(new Picofoxy(None))
 }
